@@ -337,6 +337,18 @@ window.quickCallOut = async function(techKey, techName) {
         state.attendanceOccurrences.push({ id: Date.now(), ...payload });
     }
 
+    // Fire the email flare to Google Apps Script
+    fetch(APPS_SCRIPT_WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+            type: 'ATTENDANCE_OCCURRENCE',
+            techName: techName,
+            date: d,
+            description: desc
+        }),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    }).catch(err => console.log("Email trigger failed:", err));
+
     alert(`✅ Call-out logged as PENDING. The disciplinary document has been prefilled and is waiting for ${techName}'s signature.`);
     showScorecards(); 
 };
@@ -473,6 +485,8 @@ window.submitDisciplinaryForm = async function(occId) {
         return;
     }
 
+    alert("System Check 1: Signature confirmed. Preparing to save to Supabase...");
+
     const comments = document.getElementById('disc-employee-comments')?.value.trim() || '';
     document.getElementById('disc-employee-comments').disabled = true;
 
@@ -483,7 +497,7 @@ window.submitDisciplinaryForm = async function(occId) {
         .eq('id', occId);
 
     if (error) {
-        alert("Error saving document: " + error.message);
+        alert("System Error: Failed to save to Supabase: " + error.message);
         return;
     }
 
@@ -491,6 +505,35 @@ window.submitDisciplinaryForm = async function(occId) {
     if (occIndex > -1) {
         state.attendanceOccurrences[occIndex].status = 'SIGNED';
     }
+
+    const occ = state.attendanceOccurrences.find(o => String(o.id) === String(occId));
+    const signatureImage = currentSignatureCanvas.toDataURL('image/png');
+    const signedDate = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
+
+    alert("System Check 2: Supabase updated. Firing email trigger to Google Apps Script at URL: \n\n" + APPS_SCRIPT_WEB_APP_URL.substring(0, 50) + "...");
+
+    // Fire the PDF generation flare to Google Apps Script
+    fetch(APPS_SCRIPT_WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+            type: 'GENERATE_DISCIPLINARY_PDF',
+            techName: occ.tech_name,
+            date: occ.date,
+            description: occ.description,
+            strikeCount: occ.strike_count,
+            comments: comments,
+            signatureData: signatureImage,
+            signedDate: signedDate
+        }),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    })
+    .then(response => {
+        alert("System Check 3 SUCCESS: Google received the request! HTTP Status: " + response.status);
+    })
+    .catch(err => {
+        alert("System Check 3 FAILED: The browser blocked the request or the URL is dead. Error: " + err.message);
+        console.log("PDF trigger failed:", err);
+    });
 
     setTimeout(() => {
         alert("✅ Document signed and submitted to HR file.");
@@ -1805,6 +1848,8 @@ window.submitMonthlyReview = async function(techKey, techName) {
         return;
     }
 
+    alert("System Check 1: Review Signature confirmed. Compiling data...");
+
     const signatureImage = currentSignatureCanvas.toDataURL('image/png');
     const signedDate = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
 
@@ -1820,6 +1865,29 @@ window.submitMonthlyReview = async function(techKey, techName) {
     }
 
     document.getElementById('review-sig-zone').innerHTML = '<div class="text-purple-600 font-black animate-pulse text-center p-6 border-2 border-purple-200 bg-purple-50 rounded-xl tracking-widest uppercase">SAVING REVIEW...</div>';
+
+    alert("System Check 2: Preparing to fire email trigger to Google Apps Script at URL: \n\n" + APPS_SCRIPT_WEB_APP_URL.substring(0, 50) + "...");
+
+    // Fire the Monthly Review PDF flare
+    fetch(APPS_SCRIPT_WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+            // Assuming your Google Script has the PIP SHEET WRITER logic, it catches this payload
+            endSession: true,
+            techName: techName,
+            date: new Date().toLocaleDateString('en-US'),
+            reportName: "Monthly Performance Review",
+            notes: `FEEDBACK:\n${feedback}\n\nGOALS:\n${goals}`
+        }),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    })
+    .then(response => {
+        alert("System Check 3 SUCCESS: Google received the Review request! HTTP Status: " + response.status);
+    })
+    .catch(err => {
+        alert("System Check 3 FAILED: The browser blocked the request or the URL is dead. Error: " + err.message);
+        console.log("Review trigger failed:", err);
+    });
 
     setTimeout(() => {
         document.getElementById('review-sig-zone').classList.add('hidden');
