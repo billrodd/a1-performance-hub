@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A1 Performance Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Custom Scrollbar for inner divs */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        
+        .battery-block { width: 12px; height: 20px; border-radius: 2px; border: 1px solid #334155; }
+        .bb-0 { background-color: transparent; }
+        .bb-1 { background-color: #ef4444; border-color: #ef4444; }
+        .bb-2 { background-color: #eab308; border-color: #eab308; }
+        .bb-3 { background-color: #22c55e; border-color: #22c55e; }
+        
+        .beh-btn { flex: 1; font-size: 10px; font-weight: 900; color: #64748b; border: 1px solid #334155; background: #0f172a; transition: all 0.2s; }
+        .active-exc { background: #166534; color: #fff; border-color: #166534; }
+        .active-meet { background: #1e3a8a; color: #fff; border-color: #1e3a8a; }
+        .active-need { background: #7f1d1d; color: #fff; border-color: #7f1d1d; }
+        
+        .form-textarea-lg { width: 100%; border: 2px solid #334155; border-radius: 0.5rem; padding: 0.75rem; background: #0f172a; color: #f8fafc; outline: none; font-size: 0.875rem; resize: none; transition: border-color 0.2s; }
+        .form-textarea-lg:focus { border-color: #3b82f6; }
+        .form-textarea-lg:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .drilldown-row { display: grid; grid-template-columns: 100px 80px 1fr 100px 2fr; gap: 1rem; align-items: center; padding: 0.75rem; border-bottom: 1px solid #1e293b; color: #cbd5e1; font-size: 0.875rem; }
+        .d-summary-box { background: #0f172a; padding: 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; border: 1px solid #334155; margin-bottom: 0.25rem; }
+        .d-summary-status { font-weight: 900; margin-right: 0.5rem; }
+        
+        .blueprint-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 1200px; height: 100vh; background: #0f172a; box-shadow: -10px 0 25px rgba(0,0,0,0.5); z-index: 150; transition: right 0.3s ease-in-out; display: flex; flex-direction: column; overflow: hidden; }
+        .blueprint-panel.open { right: 0; }
+
+        /* Custom Tab Styles */
+        .cat-tab { border-bottom-width: 4px; border-color: transparent; transition: all 0.2s ease; }
+        .tab-active-resi { border-color: #1e3a8a; color: #1e3a8a; background-color: #f8fafc; }
+        .tab-active-comm { border-color: #0f172a; color: #0f172a; background-color: #f8fafc; }
+        .tab-active-sales { border-color: #581c87; color: #581c87; background-color: #f8fafc; }
+        .tab-active-wh { border-color: #134e4a; color: #134e4a; background-color: #f8fafc; }
+    </style>
+</head>
+<body class="bg-slate-100 h-screen flex flex-col overflow-hidden font-sans text-slate-900">
+
+    <header class="bg-white flex flex-col border-b-[6px] border-yellow-500 shadow-sm shrink-0 z-50 relative">
+        
+        <div class="relative w-full px-4 py-3 flex items-center justify-between min-h-[90px]">
+            
+            <div class="flex items-center z-10">
+                <img src="logo.png" alt="A1 Door Company" class="h-12 md:h-16 object-contain shrink-0"> 
+            </div>
+
+            <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-2 z-10 w-max pointer-events-none">
+                <h1 id="app-subtitle" class="text-xl lg:text-3xl font-black text-slate-800 uppercase tracking-[0.3em] leading-none m-0">A1 Performance Hub</h1>
+                
+                <div class="hidden xl:flex items-center justify-center gap-2 text-slate-500 pointer-events-auto mt-1">
+                    <div class="flex flex-col items-center shadow-sm rounded overflow-hidden border border-slate-300 leading-none w-[90px]">
+                        <span class="px-2 py-2.5 bg-[#64748b] text-white text-[10px] font-black uppercase tracking-widest w-full text-center">Gray</span>
+                        <span class="bg-white text-[7px] font-bold uppercase tracking-widest px-1 py-1 w-full text-center text-[#64748b]">Apprentice</span>
+                    </div>
+                    <div class="flex flex-col items-center shadow-sm rounded overflow-hidden border border-blue-300 leading-none w-[90px]">
+                        <span class="px-2 py-2.5 bg-[#3b82f6] text-white text-[10px] font-black uppercase tracking-widest w-full text-center">Blue</span>
+                        <span class="bg-white text-[7px] font-bold uppercase tracking-widest px-1 py-1 w-full text-center text-[#3b82f6]">Jr. Tech</span>
+                    </div>
+                    <div class="flex flex-col items-center shadow-sm rounded overflow-hidden border border-green-300 leading-none w-[90px]">
+                        <span class="px-2 py-2.5 bg-[#22c55e] text-white text-[10px] font-black uppercase tracking-widest w-full text-center">Green</span>
+                        <span class="bg-white text-[7px] font-bold uppercase tracking-widest px-1 py-1 w-full text-center text-[#22c55e]">Lead Tech</span>
+                    </div>
+                    <div class="flex flex-col items-center shadow-sm rounded overflow-hidden border border-amber-300 leading-none w-[90px]">
+                        <span class="px-2 py-2.5 bg-[#b45309] text-white text-[10px] font-black uppercase tracking-widest w-full text-center">Brown</span>
+                        <span class="bg-white text-[7px] font-bold uppercase tracking-widest px-1 py-1 w-full text-center text-[#b45309]">Sr. Tech</span>
+                    </div>
+                    <div class="flex flex-col items-center shadow-sm rounded overflow-hidden border border-slate-400 leading-none w-[90px]">
+                        <span class="px-2 py-2.5 bg-[#0f172a] text-white text-[10px] font-black uppercase tracking-widest w-full text-center">Black</span>
+                        <span class="bg-white text-[7px] font-bold uppercase tracking-widest px-1 py-1 w-full text-center text-[#0f172a]">Master Tech</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end z-10 shrink-0">
+                <div class="flex flex-col items-end justify-center gap-1.5">
+                    
+                    <div class="flex items-center gap-2">
+                        <button onclick="window.goHome()" class="bg-blue-700 hover:bg-blue-800 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors shadow-sm">Home</button>
+                        <button onclick="window.showCompanyJobTypes()" class="bg-yellow-500 hover:bg-yellow-600 text-yellow-950 text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors shadow-sm">Rankings</button>
+                        <button id="btn-add-tech-header" onclick="window.showAddEmployeeModal()" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] md:text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest transition-colors shadow-sm whitespace-nowrap">+ Add Tech</button>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <div class="hidden lg:block shrink-0">
+                           <select id="sort-toggle" onchange="window.changeSort(this.value)" class="bg-slate-50 border-2 border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg outline-none focus:border-blue-500 cursor-pointer shadow-sm hover:bg-slate-100 transition-colors h-[28px]">
+                               <option value="alpha">Sort: A-Z</option>
+                               <option value="belt_high">Sort: Belt (High)</option>
+                               <option value="belt_low">Sort: Belt (Low)</option>
+                           </select>
+                        </div>
+                        
+                        <div id="admin-badge" class="hidden items-center gap-1.5 bg-slate-800 text-slate-300 text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg shadow-sm pointer-events-none h-[28px]">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Admin
+                        </div>
+                        
+                        <button onclick="window.handleLogout()" class="bg-red-800 hover:bg-red-900 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors shadow-sm whitespace-nowrap h-[28px]">Log Out</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="category-tabs" class="hidden w-full flex bg-slate-100 shadow-inner border-t border-slate-200">
+            <button onclick="window.switchCategory('RESIDENTIAL')" id="tab-RESIDENTIAL" class="cat-tab flex-1 py-3 md:py-4 text-xs md:text-sm font-black uppercase tracking-widest text-slate-400 hover:bg-white hover:text-blue-900 transition-colors">Residential</button>
+            <button onclick="window.switchCategory('COMMERCIAL')" id="tab-COMMERCIAL" class="cat-tab flex-1 py-3 md:py-4 text-xs md:text-sm font-black uppercase tracking-widest text-slate-400 hover:bg-white hover:text-slate-800 transition-colors">Commercial</button>
+            <button onclick="window.switchCategory('SALES')" id="tab-SALES" class="cat-tab flex-1 py-3 md:py-4 text-xs md:text-sm font-black uppercase tracking-widest text-slate-400 hover:bg-white hover:text-purple-900 transition-colors">Sales</button>
+            <button onclick="window.switchCategory('WAREHOUSE')" id="tab-WAREHOUSE" class="cat-tab flex-1 py-3 md:py-4 text-xs md:text-sm font-black uppercase tracking-widest text-slate-400 hover:bg-white hover:text-teal-900 transition-colors">Warehouse</button>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar relative">
+        
+        <div id="date-filter-container" class="hidden mb-6 bg-white p-3 rounded-xl border-2 border-slate-200 shadow-sm flex justify-center">
+            <div class="flex items-center gap-3">
+                <button id="btn-mtd" onclick="window.setQuickDate('mtd', this)" class="quick-date-btn bg-blue-600 text-white hover:bg-blue-700 text-[10px] md:text-xs font-black uppercase tracking-widest px-6 py-2 rounded-lg transition-colors shadow-sm">MTD</button>
+                <button id="btn-qtd" onclick="window.setQuickDate('qtd', this)" class="quick-date-btn bg-slate-100 text-slate-500 hover:bg-slate-200 text-[10px] md:text-xs font-black uppercase tracking-widest px-6 py-2 rounded-lg transition-colors shadow-sm">QTD</button>
+                <button id="btn-ytd" onclick="window.setQuickDate('ytd', this)" class="quick-date-btn bg-slate-100 text-slate-500 hover:bg-slate-200 text-[10px] md:text-xs font-black uppercase tracking-widest px-6 py-2 rounded-lg transition-colors shadow-sm">YTD</button>
+            </div>
+        </div>
+
+        <div id="view-scorecards" class="w-full h-full max-w-[1600px] mx-auto">
+            <div id="dashboard-container" class="w-full h-full"></div>
+        </div>
+
+        <div id="view-jobtypes" class="hidden w-full max-w-7xl mx-auto">
+            <div class="mb-8">
+                <h2 id="jobtypes-tech-name" class="text-6xl md:text-[80px] font-black uppercase leading-[0.85] tracking-tight inline-block break-words max-w-[400px]"></h2>
+                <div id="jobtypes-tech-stats" class="mt-4"></div>
+            </div>
+            <div id="jobtypes-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+
+        <div id="view-company-jobtypes" class="hidden w-full max-w-7xl mx-auto">
+            <div id="company-jobtypes-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+        </div>
+        
+    </main>
+
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900 z-[200] flex flex-col items-center justify-center p-4">
+        <img src="logo.png" alt="A1 Door Company" class="h-24 object-contain mb-8 bg-white p-4 rounded-2xl">
+        <div id="login-loading" class="text-blue-400 font-black tracking-widest uppercase animate-pulse">Syncing Live Data...</div>
+        <div id="login-form" class="hidden flex-col items-center gap-4 bg-slate-800 p-8 rounded-3xl shadow-2xl border border-slate-700">
+            <label class="text-white font-black tracking-widest uppercase text-sm">Enter PIN</label>
+            <input type="password" id="pin-input" maxlength="4" class="bg-slate-900 border-2 border-slate-600 text-white text-center text-3xl font-black tracking-widest w-32 py-3 rounded-xl outline-none focus:border-blue-500 transition-colors">
+            <div id="login-error" class="hidden text-red-500 text-xs font-bold uppercase tracking-widest mt-2">Invalid PIN</div>
+        </div>
+    </div>
+
+    <div id="modal-digital-form" class="fixed inset-0 z-[100] hidden bg-slate-950/90 backdrop-blur-sm flex flex-col">
+        <div class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center shrink-0 shadow-md">
+            <div class="flex items-center gap-4">
+                <h2 id="form-tech-name" class="text-2xl font-black text-white uppercase tracking-widest"></h2>
+                <span id="form-sync-status" class="text-slate-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2"></span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <select id="history-selector" class="hidden bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold uppercase tracking-widest px-3 py-2 rounded-lg outline-none focus:border-blue-500 cursor-pointer" onchange="window.updateHistoryView()"></select>
+                    <input type="text" id="form-report-name" placeholder="Report Name (e.g. March Review)" class="bg-slate-800 border border-slate-700 text-white text-xs font-bold px-3 py-2 rounded-lg outline-none focus:border-blue-500 w-48 placeholder:text-slate-500">
+                </div>
+                
+                <div id="admin-action-btns" class="flex gap-2">
+                    <button id="btn-sync-admin" onclick="window.performSync()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center transition-colors">🔄 Sync</button>
+                    <button id="btn-new-admin" onclick="window.createNewReport()" class="bg-green-700 hover:bg-green-600 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center transition-colors">✨ New</button>
+                    <button id="btn-save-admin" onclick="window.submitActionPlan('SAVE')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center transition-colors shadow-md">💾 Save</button>
+                    <button id="btn-end-admin" onclick="window.submitActionPlan('END')" class="bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center transition-colors shadow-md">⏹ End</button>
+                    <button id="btn-print-admin" onclick="window.print()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center transition-colors print:hidden">🖨 Print</button>
+                    <button onclick="window.closeModal('modal-digital-form')" class="text-slate-400 hover:text-white font-black text-xl ml-2">✕</button>
+                </div>
+
+                <div id="tech-action-btns" class="hidden flex gap-2">
+                    <button id="btn-sync-tech" onclick="window.performSync()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center transition-colors">📥 Sync</button>
+                    <button id="btn-save-tech" onclick="window.submitActionPlan('SAVE')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center transition-colors shadow-md">💾 Save</button>
+                    <button id="btn-end-tech" onclick="window.submitActionPlan('END')" class="bg-green-600 hover:bg-green-500 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center transition-colors shadow-md">✅ Submit</button>
+                    <button onclick="window.closeModal('modal-digital-form')" class="text-slate-400 hover:text-white font-black text-xl ml-2">✕</button>
+                </div>
+            </div>
+        </div>
+        <div id="tech-instructions" class="hidden bg-blue-900/50 border-b border-blue-800 p-3 text-center shrink-0 shadow-inner">
+            <span class="text-blue-300 text-xs font-bold uppercase tracking-widest">Review notes, add your feedback, and click <span class="text-white font-black">SUBMIT</span> when complete.</span>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
+            <div id="digital-form-content" class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto pb-20"></div>
+        </div>
+        <button id="modal-1on1-btn" onclick="window.toggleBlueprint(true)" class="fixed bottom-6 right-6 bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase tracking-widest px-6 py-4 rounded-full shadow-[0_0_20px_rgba(234,179,8,0.4)] transition-all transform hover:scale-105 z-50 text-sm border-2 border-yellow-300">View Career Blueprint</button>
+    </div>
+
+    <div id="blueprint-panel" class="blueprint-panel">
+        <div class="bg-slate-950 p-4 border-b border-slate-800 flex justify-between items-center shrink-0 shadow-md z-10 relative">
+            <div class="flex items-center gap-6">
+                <div id="blueprint-tech-name-container" class="flex flex-col"></div>
+                <div id="blueprint-matrix-container" class="hidden md:block"></div>
+            </div>
+            <div class="flex gap-3">
+                <button id="btn-blueprint-save" onclick="window.submitActionPlan('SAVE')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest px-6 py-3 rounded-xl transition-colors shadow-lg hidden">Save Progress</button>
+                <button onclick="window.toggleBlueprint(false)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-black px-4 py-2 rounded-xl transition-colors">Close</button>
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 lg:p-8 custom-scrollbar bg-slate-900 relative">
+            <div id="blueprint-content" class="max-w-6xl mx-auto pb-20"></div>
+        </div>
+    </div>
+
+    <div id="modal-drilldown" class="fixed inset-0 z-[150] hidden flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center shrink-0">
+                <h3 id="modal-title" class="text-xl font-black text-white uppercase tracking-widest"></h3>
+                <button onclick="window.closeModal('modal-drilldown')" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+            </div>
+            <div class="p-4 bg-slate-950 border-b border-slate-800 flex text-[10px] font-black text-slate-500 uppercase tracking-widest shrink-0">
+                <div class="w-[100px]">Date</div><div class="w-[80px]">Job</div><div class="flex-1">Type</div><div class="w-[100px]">Sold</div><div class="w-[33%]">Estimates</div>
+            </div>
+            <div id="modal-content" class="overflow-y-auto custom-scrollbar p-2 flex-1"></div>
+        </div>
+    </div>
+
+    <div id="modal-monthly-review" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-y-auto"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
