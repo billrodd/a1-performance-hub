@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #0f172a; line-height: 1.1; }
+
+/* Custom Sleek Scrollbars */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; }
+
+.clickable-row { transition: background-color 0.15s ease; border-radius: 8px; padding: 10px; margin: -10px; margin-bottom: 0; cursor: pointer; }
+.clickable-row:hover { background-color: #f1f5f9; }
+
+/* --- MODAL STYLES --- */
+.modal-bg { backdrop-filter: blur(10px); background: rgba(0,0,0,0.8); }
+.drilldown-container { background: #0f172a; border: 4px solid #334155; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; overflow: hidden; color: #ffffff;}
+
+/* Digital Form Styles */
+.digital-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 24px; overflow-y: auto; flex-grow: 1;}
+.form-box { background: #0f172a; border: 2px solid #334155; border-radius: 16px; padding: 20px; position: relative;}
+.form-textarea-lg { width: 100%; height: 110px; background: #020617; border: 1px solid #334155; color: #ffffff; padding: 12px; border-radius: 8px; font-family: 'Inter', sans-serif; resize: vertical; font-size: 14px; transition: border-color 0.2s;}
+
+/* BLUEPRINT SLIDE-OVER */
+.blueprint-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: 0; background: #020617;
+    z-index: 100; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden;
+    display: flex; flex-direction: column; border-left: 0 solid #334155;
+}
+.blueprint-panel.open { width: 100%; border-left: 6px solid #3b82f6; }
+
+.blueprint-header { padding: 32px 48px; border-bottom: 4px solid #1e293b; background: #0f172a; flex-shrink: 0; }
+.blueprint-content { padding: 32px 48px; overflow-y: auto; flex-grow: 1; background: #020617;}
+
+.skill-row { transition: border-color 0.2s, transform 0.1s; user-select: none;}
+
+/* Battery Blocks - Scaled Up */
+.battery-block { width: 22px; height: 22px; border-radius: 4px; transition: all 0.2s ease;}
+.bb-0 { background: #1e293b; border: 1px solid #334155; }
+.bb-1 { background: #3b82f6; box-shadow: 0 0 10px rgba(59, 130, 246, 0.6); border: 1px solid #60a5fa;}
+.bb-2 { background: #eab308; box-shadow: 0 0 10px rgba(234, 179, 8, 0.6); border: 1px solid #facc15;}
+.bb-3 { background: #22c55e; box-shadow: 0 0 10px rgba(34, 197, 94, 0.6); border: 1px solid #4ade80;}
+
+/* Behavior Buttons - Scaled Up */
+.beh-btn { flex: 1; text-align: center; font-size: 14px; font-weight: 900; text-transform: uppercase; cursor: pointer; border: 1px solid #334155; color: #64748b; transition: all 0.2s; display: flex; align-items: center; justify-content: center;}
+.beh-btn:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+.beh-btn:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+
+.beh-btn.active-exc { background: #166534; color: #4ade80; border-color: #22c55e; box-shadow: inset 0 0 12px rgba(34,197,94,0.3);}
+.beh-btn.active-meet { background: #854d0e; color: #fde047; border-color: #eab308; box-shadow: inset 0 0 12px rgba(234,179,8,0.3);}
+.beh-btn.active-need { background: #7f1d1d; color: #fca5a5; border-color: #ef4444; box-shadow: inset 0 0 12px rgba(239,68,68,0.3);}
+
+@media print {
+    body { background: #fff !important; color: #000 !important; padding: 0 !important; height: auto !important; overflow: auto !important;}
+    header, .no-print, #view-jobtypes, #view-company-jobtypes, #modal-drilldown, #modal-digital-form, #login-overlay { display: none !important; }
+}
